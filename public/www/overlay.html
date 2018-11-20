@@ -15,6 +15,7 @@
             background-color: transparent;
             margin: 0;
             overflow: hidden;
+            background-image: url(a.png);
         }
         .background-color-visible {
             z-index: -2;
@@ -277,6 +278,67 @@
             right: 0;
             bottom: 0;
         }
+        #original-shame {
+            background-color: black;
+            width: 0;
+            height: 410px;
+            position: fixed;
+            bottom: 0;
+            left: 46.1%;
+            -webkit-transform: perspective(200px) rotateX(14deg);  
+            -webkit-transition: width 1s; 
+            transition: width 1s;
+        }
+        #original-shame  > h1 {
+            display: none;
+        }
+        #original-shame.expand {
+            width: 181px;
+        }
+        #original-shame.expand  > h1 {
+            display: block;
+            font-family: 'Roboto', sans-serif;
+            color: white;
+            -webkit-transform: rotate(-90deg);
+            position: absolute;
+            top: 42%;
+            left: -80px;
+            font-size: 3.8rem;
+        }
+        #prefire-shame-container {
+            display: none;
+        }
+        #prefire-shame-container.visible {
+            z-index: 0;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            flex-direction: column;
+            height: 100%;
+            animation: blink-animation 1s steps(5, start) infinite;
+            -webkit-animation: blink-animation 1s steps(5, start) infinite;
+        }
+        #prefire-shame-container > h1 {
+            color: white;
+            margin-bottom: 5%;
+            width: 20%;
+            text-align: center;
+            font-family: 'Roboto', sans-serif;
+            text-transform: uppercase;
+            font-size: 26px;
+            background-color: #90000099;
+            padding: 1rem;
+        }
+        @keyframes blink-animation {
+          to {
+            visibility: hidden;
+          }
+        }
+        @-webkit-keyframes blink-animation {
+          to {
+            visibility: hidden;
+          }
+        }
     </style>
 </head>
 <body>
@@ -304,6 +366,14 @@
     <div id="bottom-right">
         <h2 id="votes"></h2>
     </div>
+
+    <div id="original-shame">
+        <h1>CENSORED</h1>
+    </div>
+    <div id="prefire-shame-container">
+        <h1>Warning! This run contains explicit footage of triple prefire used multiple times.</h1>
+    </div>
+
 
     <div id="background-color"></div>
     <div id="background-image"></div>
