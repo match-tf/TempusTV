@@ -8,6 +8,7 @@
     config = require('./config.js'),
     exec = require('child_process').execFile,
     config = require('./config.js'),
+    tempus = require('tempus-api'),
     Bot = null,
     connections = [];
 
@@ -18,8 +19,8 @@ function reboot()
         if (err)
             console.log(err)
     });
-}
 
+}
 // FIXME:
 // This is a duplicate of startTF2() in app.js
 // Cannot require('./app.js') here due to circular requirement
@@ -331,6 +332,82 @@ config.loadCfg((err, cfg) =>
                     Bot.say(`@${chatter.username} couldn't find a run for '${map_string} ${class_string}'`);
                 }
             }
+            if (chatter.message.startsWith('!nextrun'))
+            {
+                //Do we need to log this?
+                //log.printLn(`[TWITCH] ${chatter.username} used !nextrun, message: ${chatter.message}`, log.severity.DEBUG); 
+                if (!app_running)
+                {
+                    Bot.say('!nextrun is not available right now.');
+                    return;
+                }
+                var peekedDemo = demoC.playVoted(true);
+                if (!peekedDemo || !peekedDemo.player_info || !peekedDemo.demo_info || !peekedDemo.tier_info || !peekedDemo.record_info)
+                {
+                    Bot.say('It looks like the next demo might be broken and may be skipped...');
+                }
+                else 
+                {
+                    Bot.say(`@${chatter.username} next run: '${peekedDemo.player_info.name} on ${peekedDemo.demo_info.mapname} as ${peekedDemo.record_info.class == 4 ? 'demoman' : 'soldier'} (${utils.msToTimeStamp(peekedDemo.record_info.duration * 1000)})'!`);
+                }
+            }
+            if (chatter.message.startsWith('!time'))
+            {
+                //Do we need to log this?
+                //log.printLn(`[TWITCH] ${chatter.username} used !nextrun, message: ${chatter.message}`, log.severity.DEBUG); 
+                if (!app_running || !demo_playback)
+                {
+                    Bot.say('!time is not available right now.');
+                    return;
+                }
+                var current = Date.now() - runStartTime;
+                Bot.say(`@${chatter.username} run time: ${utils.msToTimeStamp(current)}/${utils.msToTimeStamp(peekedDemo.record_info.duration * 1000)}`);
+            }
+            if (chatter.message.startsWith('!map') || chatter.message.startsWith('!mi'))
+            {
+                //Do we need to log this?
+                //log.printLn(`[TWITCH] ${chatter.username} used !nextrun, message: ${chatter.message}`, log.severity.DEBUG); 
+                if (!app_running)
+                {
+                    Bot.say('!map is not available right now.');
+                    return;
+                }
+                if (demos[currentDemo] && demos[currentDemo].demo_info.mapname)
+                {
+                    tempus.mapOverView(demos[currentDemo].demo_info.mapname).then((mapInfo) =>
+                    {
+                        if (mapInfo && mapInfo.tier_info && mapInfo.authors && mapInfo.name)
+                        {
+                            if (mapInfo.authors.length == 0)
+                            {
+                                Bot.say(`Map: ${mapInfo.name}\nAuthor: N/A\nTier:\n  Soldier: ${mapInfo.tier_info.soldier}\n  Demoman: ${mapInfo.tier_info.demoman}\nDownload: https://tempus.xyz/maps/${mapInfo.name}`);
+                            }
+                            else if (mapInfo.authors.length == 1)
+                            {
+                                Bot.say(`Map: ${mapInfo.name}\nAuthor: ${mapInfo.authors[0].name}\nTier:\n  Soldier: ${mapInfo.tier_info.soldier}\n  Demoman: ${mapInfo.tier_info.demoman}\nDownload: https://tempus.xyz/maps/${mapInfo.name}`);
+                            }
+                            else if (mapInfo.authors.length > 1)
+                            {
+                                var authStr = mapInfo.authors[0].name;
+                                for (var i = 1; i < mapInfo.authors.length; i++)
+                                {
+                                    authStr += `, ${mapInfo.authors[i].name}`
+                                }
+                                Bot.say(`Map: ${mapInfo.name}\nAuthor: ${authStr}\nTier:\n  Soldier: ${mapInfo.tier_info.soldier}\n  Demoman: ${mapInfo.tier_info.demoman}\nDownload: https://tempus.xyz/maps/${mapInfo.name}`);
+                            }
+                        }
+                        else
+                        {
+                            Bot.say(`Could not find map info for current run!`);
+                        }
+                    });                    
+                }
+                else
+                {
+                    Bot.say(`Could not find map info for current run!`);
+                }
+                
+            }
             if (chatter.message.startsWith('!rcon ') && (chatter.username === 'tempusrecords' || chatter.username === 'pancakelarry'))
             {
                 log.printLn(`[TWITCH] ${chatter.username} used !rcon, message: ${chatter.message}`, log.severity.DEBUG);
@@ -440,5 +517,7 @@ function reconnect()
         }
     }, 10000);
 }
+
+
 
 module.exports.instance = instance;

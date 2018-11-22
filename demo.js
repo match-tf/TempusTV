@@ -21,7 +21,7 @@ var demoLoadTimeout = 20000;
 
 function playDemo(index)
 {
-    playback = false;
+    demo_playback = false;
     demo_loaded = false;
     if (rcon.active)
         rcon.instance().send('volume 0');
@@ -69,7 +69,7 @@ function playDemo(index)
                     {
                         if (err)
                         {
-                            if (playback)
+                            if (demo_playback)
                                 return;
                             if (err.code === 'ENOENT')
                             {
@@ -163,7 +163,7 @@ function startDemo(index)
             { tick: 33, commands: `fog_override 1; fog_enable 0; rcon ttv_demo_load; demo_gototick ${demos[index].record_info.demo_start_tick - startPadding}; demo_setendtick ${demos[index].record_info.demo_end_tick + endPadding + 66}` },
             { tick: demos[index].record_info.demo_start_tick - startPadding, commands: `exec ttv_spec_player; spec_mode 4; demo_resume; volume 0.05; rcon ttv_run_start` },
             { tick: demos[index].record_info.demo_start_tick - (startPadding / 4) * 3, commands: `rcon ttv_run_start_timer` },
-            { tick: demos[index].record_info.demo_start_tick, commands: `exec ttv_spec_player; spec_mode 4` }, //in case player dead before start_tick
+            { tick: demos[index].record_info.demo_start_tick, commands: `exec ttv_spec_player; spec_mode 4; rcon ttv_run_start_actual` }, //in case player dead before start_tick
             { tick: demos[index].record_info.demo_end_tick - endTimerPadding, commands: 'rcon ttv_run_end_timer' }/*,
             { tick: demos[index].record_info.demo_end_tick + (endPadding / 4) * 3, commands: 'rcon ttv_run_end' },
             { tick: demos[index].record_info.demo_end_tick + endPadding, commands: 'volume 0; rcon ttv_run_next' }*/
@@ -457,9 +457,16 @@ function shuffle()
 }
 
 // Play the most voted map, prioritize old votes if equal amounts
-function playVoted()
+function playVoted(peek = false)
 {
     var most = 0;
+    if(runVotes.length == 0 && peek == true)
+    {
+        if(currentDemo + 1 < demos.length)
+            return demos[currentDemo+1];
+        else
+            return demos[0];
+    }
     for (var i = 0; i < runVotes.length; i++)
     {
         if (runVotes[i].users.length > runVotes[most].users.length)
@@ -481,18 +488,34 @@ function playVoted()
         demos.splice(fromIndex, 1);
         demos.splice(toIndex, 0, element);
 
-        runVotes.splice(most, 1);
-        log.printLn(`[VOTES] Removed votes for ${demos[0].demo_info.filename}`, log.severity.DEBUG);
-
+        if (peek == false) 
+        {
+            runVotes.splice(most, 1);
+            log.printLn(`[VOTES] Removed votes for ${demos[0].demo_info.filename}`, log.severity.DEBUG);
+        }
         currentDemo = toIndex;
-        playDemo(currentDemo);
+        if (peek == true) 
+        {
+            return demos[currentDemo];
+        }
+        else 
+        {
+            playDemo(currentDemo);
+        }
     }
     else
     {
         log.printLn('[VOTES] Error: target == -1', log.severity.ERROR);
         runVotes.splice(most, 1);
         log.printLn(`[VOTES] Removed votes for ${demos[0].demo_info.filename}`, log.severity.DEBUG);
-        skip();
+        if(peek == false)
+        {
+            skip();
+        }
+        else
+        {
+            return playVoted(true);
+        }
     }
 }
 
